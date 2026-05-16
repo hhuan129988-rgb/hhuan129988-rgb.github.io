@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>银河</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; width: 100vw; height: 100vh; }
+  canvas { display: block; }
+  .overlay {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.25);
+    font-family: 'Georgia', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    pointer-events: none;
+    animation: fadeIn 4s ease 2s both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">银河 · Milky Way</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H, cx, cy;
+let stars = [];
+let dustClouds = [];
+let shootingStars = [];
+let t = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2;
+  cy = H / 2;
+  init();
+}
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+
+function galaxyPoint(radius) {
+  const arms = 3;
+  const armAngle = (Math.PI * 2 / arms) * Math.floor(Math.random() * arms);
+  const twist = radius * 0.004;
+  const a = armAngle + twist + rand(-0.3, 0.3);
+  const r = radius + rand(-radius * 0.1, radius * 0.1);
+  return {
+    x: cx + Math.cos(a) * r,
+    y: cy + Math.sin(a) * r * 0.38,
+  };
+}
+
+function init() {
+  stars = [];
+  dustClouds = [];
+
+  for (let i = 0; i < 400; i++) {
+    stars.push({
+      x: rand(0, W), y: rand(0, H),
+      r: rand(0.2, 1.2),
+      alpha: rand(0.1, 0.7),
+      twinkle: rand(0.002, 0.01),
+      phase: rand(0, Math.PI * 2),
+      type: 'bg'
+    });
+  }
+
+  for (let i = 0; i < 180; i++) {
+    const radius = rand(0, 120);
+    const angle = rand(0, Math.PI * 2);
+    dustClouds.push({
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius * 0.38,
+      r: rand(20, 80), alpha: rand(0.01, 0.06), hue: rand(200, 280),
+    });
+  }
+
+  for (let i = 0; i < 300; i++) {
+    const radius = rand(80, Math.min(W, H) * 0.55);
+    const pt = galaxyPoint(radius);
+    dustClouds.push({ x: pt.x, y: pt.y, r: rand(15, 55), alpha: rand(0.008, 0.04), hue: rand(210, 300) });
+  }
+
+  for (let i = 0; i < 2800; i++) {
+    const radius = rand(0, Math.min(W, H) * 0.55);
+    const pt = radius < 100
+      ? { x: cx + rand(-100, 100), y: cy + rand(-40, 40) }
+      : galaxyPoint(radius);
+    const distFromCenter = Math.hypot(pt.x - cx, (pt.y - cy) / 0.38);
+    const brightness = Math.max(0.05, 1 - distFromCenter / (Math.min(W, H) * 0.55));
+    stars.push({
+      x: pt.x, y: pt.y,
+      r: rand(0.2, 1.8) * brightness,
+      alpha: rand(0.3, 1) * brightness,
+      twinkle: rand(0.001, 0.008),
+      phase: rand(0, Math.PI * 2),
+      hue: rand(180, 320),
+      type: 'galaxy'
+    });
+  }
+
+  for (let i = 0; i < 60; i++) {
+    stars.push({
+      x: rand(0, W), y: rand(0, H),
+      r: rand(1.5, 3), alpha: rand(0.5, 1),
+      twinkle: rand(0.003, 0.012),
+      phase: rand(0, Math.PI * 2),
+      type: 'bright'
+    });
+  }
+}
+
+function spawnShootingStar() {
+  shootingStars.push({
+    x: rand(0, W * 0.6), y: rand(0, H * 0.4),
+    vx: rand(5, 10), vy: rand(2, 5),
+    len: rand(80, 200), life: 1,
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.8);
+  bg.addColorStop(0, '#0d0820');
+  bg.addColorStop(0.4, '#060412');
+  bg.addColorStop(1, '#000000');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, 0.38);
+  ctx.translate(-cx, -cy);
+  const plane = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.5);
+  plane.addColorStop(0, 'rgba(160,120,255,0.12)');
+  plane.addColorStop(0.3, 'rgba(100,80,200,0.06)');
+  plane.addColorStop(0.6, 'rgba(60,40,120,0.03)');
+  plane.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = plane;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  for (const d of dustClouds) {
+    const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r);
+    g.addColorStop(0, `hsla(${d.hue},60%,70%,${d.alpha})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx, cy); ctx.scale(1, 0.38); ctx.translate(-cx, -cy);
+  const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, 90);
+  core.addColorStop(0, 'rgba(255,240,200,0.18)');
+  core.addColorStop(0.2, 'rgba(200,160,255,0.1)');
+  core.addColorStop(0.5, 'rgba(120,80,200,0.05)');
+  core.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = core;
+  ctx.beginPath(); ctx.arc(cx, cy, 90, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  for (const s of stars) {
+    const twinkle = Math.sin(t * s.twinkle * 60 + s.phase) * 0.3 + 0.7;
+    ctx.globalAlpha = s.alpha * twinkle;
+    if (s.type === 'bright') {
+      const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.2, 'rgba(200,220,255,0.5)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(255,255,255,${s.alpha * twinkle * 0.3})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(s.x - s.r * 8, s.y); ctx.lineTo(s.x + s.r * 8, s.y);
+      ctx.moveTo(s.x, s.y - s.r * 8); ctx.lineTo(s.x, s.y + s.r * 8);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = s.hue ? `hsla(${s.hue},50%,85%,1)` : 'rgba(220,230,255,1)';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  for (let i = shootingStars.length - 1; i >= 0; i--) {
+    const ss = shootingStars[i];
+    ss.x += ss.vx; ss.y += ss.vy; ss.life -= 0.018;
+    if (ss.life <= 0 || ss.x > W + 100 || ss.y > H + 100) { shootingStars.splice(i, 1); continue; }
+    const len = Math.hypot(ss.vx, ss.vy);
+    const grad = ctx.createLinearGradient(ss.x, ss.y, ss.x - ss.vx / len * ss.len, ss.y - ss.vy / len * ss.len);
+    grad.addColorStop(0, `rgba(255,255,255,${ss.life})`);
+    grad.addColorStop(0.3, `rgba(180,200,255,${ss.life * 0.4})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.strokeStyle = grad; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(ss.x, ss.y);
+    ctx.lineTo(ss.x - ss.vx / len * ss.len, ss.y - ss.vy / len * ss.len);
+    ctx.stroke();
+  }
+
+  if (Math.random() < 0.003) spawnShootingStar();
+  t += 0.016;
+  requestAnimationFrame(draw);
+}
+
+window.addEventListener('resize', resize);
+resize();
+draw();
+</script>
+</body>
+</html>
