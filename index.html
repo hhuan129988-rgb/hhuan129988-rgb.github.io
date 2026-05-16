@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的第一个网页</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #1a4fa8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Serif SC', serif;
+      overflow: hidden;
+    }
+
+    .container {
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 10vw, 7rem);
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      animation: fadeIn 1.2s ease both;
+    }
+
+    .sub {
+      margin-top: 1.2rem;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.2em;
+      font-family: monospace;
+      animation: fadeIn 1.8s ease both;
+    }
+
+    /* 背景装饰圆 */
+    .circle {
+      position: fixed;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+    .c1 { width: 500px; height: 500px; top: -120px; left: -120px; }
+    .c2 { width: 350px; height: 350px; bottom: -80px; right: -60px; }
+    .c3 { width: 200px; height: 200px; top: 50%; left: 70%; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+  <div class="circle c3"></div>
+  <div class="container">
+    <h1>Hello World</h1>
+    <p class="sub">我的第一个网页 🎉</p>
+  </div>
+</body>
+</html>
